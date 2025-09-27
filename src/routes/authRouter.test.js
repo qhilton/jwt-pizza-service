@@ -24,3 +24,18 @@ test('login', async () => {
 function expectValidJwt(potentialJwt) {
   expect(potentialJwt).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
 }
+
+test('logout', async () => {
+  const loginRes = await request(app).put('/api/auth').send(testUser);
+  expect(loginRes.status).toBe(200);
+  expectValidJwt(loginRes.body.token);
+
+  const expectedUser = { ...testUser, roles: [{ role: 'diner' }] };
+  delete expectedUser.password;
+  expect(loginRes.body.user).toMatchObject(expectedUser);
+
+  const token = loginRes.body.token;
+
+  const logoutRes = await request(app).delete('/api/auth').set('Authorization', `Bearer ${token}`);
+  expect(logoutRes.status).toBe(200);
+});
