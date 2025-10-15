@@ -99,6 +99,35 @@ class DB {
     }
   }
 
+  async getUserList(authUser, page = 0, limit = 10, emailFilter = '*') {
+    const connection = await this.getConnection();
+
+    const offset = page * limit;
+    emailFilter = emailFilter.replace(/\*/g, '%');
+
+    try {
+      let userList = await this.query(connection, `SELECT * FROM user WHERE email LIKE ? LIMIT ${limit + 1} OFFSET ${offset}`, [emailFilter]);
+
+      const more = userList.length > limit;
+      if (more) {
+        userList = userList.slice(0, limit);
+      }
+
+      for (const user of userList) {
+        const roleResult = await this.query(connection, `SELECT * FROM userRole WHERE userId=?`, [user.id]);
+        const roles = roleResult.map((r) => ({
+          objectId: r.objectId || undefined,
+          role: r.role,
+        }));
+        user.roles = roles;
+      }
+
+      return [userList, more];
+    } finally {
+      connection.end();
+    }
+  }
+
   async loginUser(userId, token) {
     token = this.getTokenSignature(token);
     const connection = await this.getConnection();
