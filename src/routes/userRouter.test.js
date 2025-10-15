@@ -46,7 +46,7 @@ test('list users unauthorized', async () => {
 
 test('list users', async () => {
 //   const [user, userToken] = await createAdminUser(request(app));
-  const user = await createAdminUser();
+  await createAdminUser();
 
   const listUsersRes = await request(app)
     .get('/api/user')
