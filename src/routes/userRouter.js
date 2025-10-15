@@ -39,6 +39,14 @@ userRouter.docs = [
       ],
     },
   },
+  {
+    method: 'DELETE',
+    path: '/api/user/:userId',
+    requiresAuth: true,
+    description: `Delete a user`,
+    example: `curl -X DELETE localhost:3000/api/user/1  -H 'Authorization: Bearer tttttt'`,
+    response: { message: 'user deleted' },
+  },
 ];
 
 // getUser
@@ -74,7 +82,7 @@ userRouter.get(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     if (!req.user.isRole(Role.Admin)) {
-      throw new StatusCodeError('unauthorized user', 401);
+      throw new StatusCodeError('unauthorized user', 403);
     }
 
     const [userList, more] = await DB.getUserList(req.user, req.query.page, req.query.limit, req.query.name);
@@ -83,5 +91,19 @@ userRouter.get(
   })
 );
 
+// deleteStore
+userRouter.delete(
+  '/:userId',
+  authRouter.authenticateToken,
+  asyncHandler(async (req, res) => {
+    const userId = Number(req.params.userId);
+    if (!req.user.isRole(Role.Admin)) {
+      throw new StatusCodeError('unauthorized user', 403);
+    }
+
+    await DB.deleteUser(userId);
+    res.json({ message: 'user deleted' });
+  })
+);
 
 module.exports = userRouter;

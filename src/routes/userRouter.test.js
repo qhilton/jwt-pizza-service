@@ -15,7 +15,7 @@ function randomName() {
   return Math.random().toString(36).substring(2, 12);
 }
 
-const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
+const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a', id: 4 };
 let testUserAuthToken;
 let adminAuthToken;
 
@@ -54,3 +54,30 @@ test('list users', async () => {
   expect(listUsersRes.status).toBe(200);
 });
 
+test('delete user unauthorized', async () => {
+  const listUsersRes = await request(app).delete('/api/user'+ testUser.id);
+  expect(listUsersRes.status).toBe(404);
+});
+
+test('delete user', async () => {
+  const userToDelete = {
+    name: 'User to Delete',
+    email: randomName() + '@delete.com',
+    password: 'deletepass'
+  };
+  
+  const createRes = await request(app)
+    .post('/api/auth')
+    .send(userToDelete);
+  
+  expect(createRes.status).toBe(200);
+  const userToDeleteId = createRes.body.user.id;
+
+  // Delete the user as admin
+  const deleteRes = await request(app)
+    .delete(`/api/user/${userToDeleteId}`)
+    .set('Authorization', `Bearer ${adminAuthToken}`);
+
+  expect(deleteRes.status).toBe(200);
+  expect(deleteRes.body).toMatchObject({ message: 'user deleted' });
+});
