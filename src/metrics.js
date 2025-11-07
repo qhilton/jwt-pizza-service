@@ -9,7 +9,6 @@ const config = require('./config');
 const requestsByEndpoint = {};
 const requestsByMethod = {};
 let totalRequests = 0;
-let greetingChangedCount = 0;
 
 // Authentication metrics
 let authAttemptsSuccess = 0;
@@ -259,7 +258,6 @@ function resetCounters() {
     for (const key in requestsByEndpoint) delete requestsByEndpoint[key];
     for (const key in requestsByMethod) delete requestsByMethod[key];
     totalRequests = 0;
-    greetingChangedCount = 0;
 
     authAttemptsSuccess = 0;
     authAttemptsFailed = 0;
