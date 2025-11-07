@@ -212,10 +212,10 @@ setInterval(() => {
     // metrics.push(createMetric('latency_pizza_creation', latencyPizzaCreation, 'ms', 'sum', 'asInt', {}));
 
     // --- Latency Metrics (averages over last minute) ---
-    console.log("serviceLat", serviceLatencies);
-    console.log("avg serviceLat", getAverageLatency(serviceLatencies));
-    console.log("pizzaLatencies", pizzaLatencies);
-    console.log("avg pizzaLatencies", getAverageLatency(pizzaLatencies));
+    // console.log("serviceLat", serviceLatencies);
+    // console.log("avg serviceLat", getAverageLatency(serviceLatencies));
+    // console.log("pizzaLatencies", pizzaLatencies);
+    // console.log("avg pizzaLatencies", getAverageLatency(pizzaLatencies));
     metrics.push(createMetric('latency_service', getAverageLatency(serviceLatencies), 'ms', 'gauge', 'asInt', {}));
     metrics.push(createMetric('latency_pizza_creation', getAverageLatency(pizzaLatencies), 'ms', 'gauge', 'asInt', {}));
 
