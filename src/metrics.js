@@ -21,11 +21,14 @@ let pizzaRevenue = 0;
 
 // Active users (can be set from your session manager or auth layer)
 let activeUsers = 0;
-const activeUserIds = new Set();
+const activeUsersMap = new Map();
 
 // Latency metrics (average or cumulative per interval)
-let latencyService = 0;
-let latencyPizzaCreation = 0;
+// let latencyService = 0;
+// let latencyPizzaCreation = 0;
+
+let serviceLatencies = [];
+let pizzaLatencies = [];
 
 // =========================
 // Middleware & metric hooks
@@ -33,19 +36,43 @@ let latencyPizzaCreation = 0;
 
 // Middleware to track incoming HTTP requests
 function requestTracker(req, res, next) {
+    const startTime = Date.now();
     const endpoint = `[${req.method}] ${req.path}`;
     requestsByEndpoint[endpoint] = (requestsByEndpoint[endpoint] || 0) + 1;
     requestsByMethod[req.method] = (requestsByMethod[req.method] || 0) + 1;
     totalRequests++;
+
+    res.on('finish', () => {
+        const duration = Date.now() - startTime;
+        trackServiceLatency(duration);
+    });
+
     next();
 }
 
 // Example hook for latency tracking
+// function trackServiceLatency(ms) {
+//     latencyService += ms;
+// }
+// function trackPizzaLatency(ms) {
+//     latencyPizzaCreation += ms;
+// }
+
 function trackServiceLatency(ms) {
-    latencyService += ms;
+    serviceLatencies.push(ms);
+    if (serviceLatencies.length > 100) serviceLatencies.shift(); // avoid memory growth
 }
+
 function trackPizzaLatency(ms) {
-    latencyPizzaCreation += ms;
+    pizzaLatencies.push(ms);
+    if (pizzaLatencies.length > 100) pizzaLatencies.shift();
+}
+
+// Calculate average latency when reporting
+function getAverageLatency(latencies) {
+    if (latencies.length === 0) return 0;
+    const sum = latencies.reduce((a, b) => a + b, 0);
+    return Math.round(sum / latencies.length);
 }
 
 // Authentication metric helpers
@@ -77,12 +104,12 @@ function recordAuthAttempt(success, userId) {
     if (success) {
         authAttemptsSuccess++;
 
-        // When user successfully authenticates, increase active user count
+        // When user successfully authenticates, update their activity timestamp
         if (userId != null) {
-            activeUserIds.add(userId)
+            activeUsersMap.set(userId, Date.now());
         }
-        activeUsers = activeUserIds.size;
 
+        activeUsers = activeUsersMap.size;
     } else {
         authAttemptsFailed++;
     }
@@ -90,8 +117,9 @@ function recordAuthAttempt(success, userId) {
 
 // Decrease active user count when logging out
 function removeActiveUser(userId) {
-    if (userId != null && activeUsers > 0) {
-        activeUsers--;
+    if (userId != null) {
+        activeUsersMap.delete(userId);
+        activeUsers = activeUsersMap.size;
     }
 }
 
@@ -146,9 +174,9 @@ setInterval(() => {
     // Clean up inactive users (no activity in last 5 minutes)
     const now = Date.now();
     const fiveMinutesAgo = now - (5 * 60 * 1000);
-    for (const [userId, lastActivityTime] of this.activeUsers) {
+    for (const [userId, lastActivityTime] of activeUsersMap) {
         if (lastActivityTime < fiveMinutesAgo) {
-            this.activeUsers.delete(userId);
+            activeUsersMap.delete(userId);
             // console.log(`User ${userId} expired from active users (last activity: ${new Date(lastActivityTime).toISOString()})`);
         }
     }
@@ -180,8 +208,16 @@ setInterval(() => {
     metrics.push(createMetric('pizza_revenue', pizzaRevenue, 'usd', 'sum', 'asDouble', {}));
 
     // --- Latency Metrics ---
-    metrics.push(createMetric('latency_service', latencyService, 'ms', 'sum', 'asInt', {}));
-    metrics.push(createMetric('latency_pizza_creation', latencyPizzaCreation, 'ms', 'sum', 'asInt', {}));
+    // metrics.push(createMetric('latency_service', latencyService, 'ms', 'sum', 'asInt', {}));
+    // metrics.push(createMetric('latency_pizza_creation', latencyPizzaCreation, 'ms', 'sum', 'asInt', {}));
+
+    // --- Latency Metrics (averages over last minute) ---
+    console.log("serviceLat", serviceLatencies);
+    console.log("avg serviceLat", getAverageLatency(serviceLatencies));
+    console.log("pizzaLatencies", pizzaLatencies);
+    console.log("avg pizzaLatencies", getAverageLatency(pizzaLatencies));
+    metrics.push(createMetric('latency_service', getAverageLatency(serviceLatencies), 'ms', 'gauge', 'asInt', {}));
+    metrics.push(createMetric('latency_pizza_creation', getAverageLatency(pizzaLatencies), 'ms', 'gauge', 'asInt', {}));
 
     // Send to Grafana
     sendMetricToGrafana(metrics);
@@ -266,8 +302,24 @@ function resetCounters() {
     pizzaCreationFailures = 0;
     pizzaRevenue = 0;
 
-    latencyService = 0;
-    latencyPizzaCreation = 0;
+    // latencyService = 0;
+    // latencyPizzaCreation = 0;
+
+    // serviceLatencies.length = 0;
+    // pizzaLatencies.length = 0;
+
+    // Preserve last 50 latency samples for averaging
+    if (serviceLatencies.length > 50) {
+        serviceLatencies = serviceLatencies.slice(-50);
+    } else {
+        serviceLatencies = [];
+    }
+
+    if (pizzaLatencies.length > 50) {
+        pizzaLatencies = pizzaLatencies.slice(-50);
+    } else {
+        pizzaLatencies = [];
+    }
 }
 
 // =========================
