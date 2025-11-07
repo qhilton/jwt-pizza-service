@@ -34,39 +34,39 @@ let latencyPizzaCreation = 0;
 
 // Middleware to track incoming HTTP requests
 function requestTracker(req, res, next) {
-  const endpoint = `[${req.method}] ${req.path}`;
-  requestsByEndpoint[endpoint] = (requestsByEndpoint[endpoint] || 0) + 1;
-  requestsByMethod[req.method] = (requestsByMethod[req.method] || 0) + 1;
-  totalRequests++;
-  next();
+    const endpoint = `[${req.method}] ${req.path}`;
+    requestsByEndpoint[endpoint] = (requestsByEndpoint[endpoint] || 0) + 1;
+    requestsByMethod[req.method] = (requestsByMethod[req.method] || 0) + 1;
+    totalRequests++;
+    next();
 }
 
 // Example hook for latency tracking
 function trackServiceLatency(ms) {
-  latencyService += ms;
+    latencyService += ms;
 }
 function trackPizzaLatency(ms) {
-  latencyPizzaCreation += ms;
+    latencyPizzaCreation += ms;
 }
 
 // Authentication metric helpers
 function trackAuthAttempt(success) {
-  if (success) authAttemptsSuccess++;
-  else authAttemptsFailed++;
+    if (success) authAttemptsSuccess++;
+    else authAttemptsFailed++;
 }
 
 // Pizza metric helpers
 function trackPizzaSold(price) {
-  pizzasSold++;
-  pizzaRevenue += price;
+    pizzasSold++;
+    pizzaRevenue += price;
 }
 function trackPizzaFailure() {
-  pizzaCreationFailures++;
+    pizzaCreationFailures++;
 }
 
 // Active users (could be set externally)
 function setActiveUsers(count) {
-  activeUsers = count;
+    activeUsers = count;
 }
 
 // =========================
@@ -76,24 +76,24 @@ function setActiveUsers(count) {
 // Track authentication attempts and adjust active user count
 function recordAuthAttempt(success, userId) {
     if (success) {
-    authAttemptsSuccess++;
+        authAttemptsSuccess++;
 
-    // When user successfully authenticates, increase active user count
-    if (userId != null) {
-      activeUserIds.add(userId)
+        // When user successfully authenticates, increase active user count
+        if (userId != null) {
+            activeUserIds.add(userId)
+        }
+        activeUsers = activeUserIds.size;
+
+    } else {
+        authAttemptsFailed++;
     }
-    activeUsers = activeUserIds.size;
-
-  } else {
-    authAttemptsFailed++;
-  }
 }
 
 // Decrease active user count when logging out
 function removeActiveUser(userId) {
-  if (userId != null && activeUsers > 0) {
-    activeUsers--;
-  }
+    if (userId != null && activeUsers > 0) {
+        activeUsers--;
+    }
 }
 
 // =========================
@@ -108,33 +108,33 @@ function removeActiveUser(userId) {
 // }
 
 function getCpuUsagePercentage() {
-  const load = os.loadavg()[0];
-  const cpus = os.cpus().length;
+    const load = os.loadavg()[0];
+    const cpus = os.cpus().length;
 
-  if (load === 0) {
-    // Fallback for Windows or unavailable loadavg
-    return (process.cpuUsage().user / 1e6).toFixed(2);
-  }
+    if (load === 0) {
+        // Fallback for Windows or unavailable loadavg
+        return (process.cpuUsage().user / 1e6).toFixed(2);
+    }
 
-  return ((load / cpus) * 100).toFixed(2);
+    return ((load / cpus) * 100).toFixed(2);
 }
 
 function getMemoryUsagePercentage() {
-  const totalMemory = os.totalmem();
-  const usedMemory = totalMemory - os.freemem();
-  return ((usedMemory / totalMemory) * 100).toFixed(2);
+    const totalMemory = os.totalmem();
+    const usedMemory = totalMemory - os.freemem();
+    return ((usedMemory / totalMemory) * 100).toFixed(2);
 }
 
 // =========================
 // Pizza purchase helper
 // =========================
 function pizzaPurchase(success, latencyMs, price) {
-  if (success) {
-    trackPizzaSold(price);
-  } else {
-    trackPizzaFailure();
-  }
-  trackPizzaLatency(latencyMs);
+    if (success) {
+        trackPizzaSold(price);
+    } else {
+        trackPizzaFailure();
+    }
+    trackPizzaLatency(latencyMs);
 }
 
 // =========================
@@ -142,52 +142,53 @@ function pizzaPurchase(success, latencyMs, price) {
 // =========================
 
 setInterval(() => {
-  const metrics = [];
+    const metrics = [];
 
-  // Clean up inactive users (no activity in last 5 minutes)
+    // Clean up inactive users (no activity in last 5 minutes)
+    const now = Date.now();
     const fiveMinutesAgo = now - (5 * 60 * 1000);
-    for (const [userId,lastActivityTime] of this.activeUsers) {
+    for (const [userId, lastActivityTime] of this.activeUsers) {
         if (lastActivityTime < fiveMinutesAgo) {
             this.activeUsers.delete(userId);
             // console.log(`User ${userId} expired from active users (last activity: ${new Date(lastActivityTime).toISOString()})`);
         }
     }
 
-  // --- HTTP Request Metrics ---
-  Object.keys(requestsByMethod).forEach((method) => {
-    metrics.push(createMetric('http_requests_by_method', requestsByMethod[method], '1', 'sum', 'asInt', { method }));
-  });
-  Object.keys(requestsByEndpoint).forEach((endpoint) => {
-    metrics.push(createMetric('http_requests_by_endpoint', requestsByEndpoint[endpoint], '1', 'sum', 'asInt', { endpoint }));
-  });
-  metrics.push(createMetric('http_total_requests', totalRequests, '1', 'sum', 'asInt', {}));
+    // --- HTTP Request Metrics ---
+    Object.keys(requestsByMethod).forEach((method) => {
+        metrics.push(createMetric('http_requests_by_method', requestsByMethod[method], '1', 'sum', 'asInt', { method }));
+    });
+    Object.keys(requestsByEndpoint).forEach((endpoint) => {
+        metrics.push(createMetric('http_requests_by_endpoint', requestsByEndpoint[endpoint], '1', 'sum', 'asInt', { endpoint }));
+    });
+    metrics.push(createMetric('http_total_requests', totalRequests, '1', 'sum', 'asInt', {}));
 
 
-  // --- System Metrics ---
-  metrics.push(createMetric('cpu_usage', parseFloat(getCpuUsagePercentage()), '%', 'gauge', 'asDouble', {}));
-  metrics.push(createMetric('memory_usage', parseFloat(getMemoryUsagePercentage()), '%', 'gauge', 'asDouble', {}));
+    // --- System Metrics ---
+    metrics.push(createMetric('cpu_usage', parseFloat(getCpuUsagePercentage()), '%', 'gauge', 'asDouble', {}));
+    metrics.push(createMetric('memory_usage', parseFloat(getMemoryUsagePercentage()), '%', 'gauge', 'asDouble', {}));
 
-  // --- Authentication Metrics ---
-  metrics.push(createMetric('auth_attempts_success', authAttemptsSuccess, '1', 'sum', 'asInt', {}));
-  metrics.push(createMetric('auth_attempts_failed', authAttemptsFailed, '1', 'sum', 'asInt', {}));
+    // --- Authentication Metrics ---
+    metrics.push(createMetric('auth_attempts_success', authAttemptsSuccess, '1', 'sum', 'asInt', {}));
+    metrics.push(createMetric('auth_attempts_failed', authAttemptsFailed, '1', 'sum', 'asInt', {}));
 
-  // --- Active Users ---
-  metrics.push(createMetric('active_users', activeUsers, '1', 'gauge', 'asInt', {}));
+    // --- Active Users ---
+    metrics.push(createMetric('active_users', activeUsers, '1', 'gauge', 'asInt', {}));
 
-  // --- Pizza Metrics ---
-  metrics.push(createMetric('pizza_sold', pizzasSold, '1', 'sum', 'asInt', {}));
-  metrics.push(createMetric('pizza_creation_failures', pizzaCreationFailures, '1', 'sum', 'asInt', {}));
-  metrics.push(createMetric('pizza_revenue', pizzaRevenue, 'usd', 'sum', 'asDouble', {}));
+    // --- Pizza Metrics ---
+    metrics.push(createMetric('pizza_sold', pizzasSold, '1', 'sum', 'asInt', {}));
+    metrics.push(createMetric('pizza_creation_failures', pizzaCreationFailures, '1', 'sum', 'asInt', {}));
+    metrics.push(createMetric('pizza_revenue', pizzaRevenue, 'usd', 'sum', 'asDouble', {}));
 
-  // --- Latency Metrics ---
-  metrics.push(createMetric('latency_service', latencyService, 'ms', 'sum', 'asInt', {}));
-  metrics.push(createMetric('latency_pizza_creation', latencyPizzaCreation, 'ms', 'sum', 'asInt', {}));
+    // --- Latency Metrics ---
+    metrics.push(createMetric('latency_service', latencyService, 'ms', 'sum', 'asInt', {}));
+    metrics.push(createMetric('latency_pizza_creation', latencyPizzaCreation, 'ms', 'sum', 'asInt', {}));
 
-  // Send to Grafana
-  sendMetricToGrafana(metrics);
+    // Send to Grafana
+    sendMetricToGrafana(metrics);
 
-  // Reset counters for per-minute metrics
-  resetCounters();
+    // Reset counters for per-minute metrics
+    resetCounters();
 }, 60000); // every 1 minute
 
 // =========================
@@ -195,94 +196,94 @@ setInterval(() => {
 // =========================
 
 function createMetric(metricName, metricValue, metricUnit, metricType, valueType, attributes) {
-  attributes = { ...attributes, source: config.source };
+    attributes = { ...attributes, source: config.source };
 
-  const metric = {
-    name: metricName,
-    unit: metricUnit,
-    [metricType]: {
-      dataPoints: [
-        {
-          [valueType]: metricValue,
-          timeUnixNano: Date.now() * 1_000_000,
-          attributes: Object.entries(attributes).map(([key, value]) => ({
-            key,
-            value: { stringValue: String(value) },
-          })),
+    const metric = {
+        name: metricName,
+        unit: metricUnit,
+        [metricType]: {
+            dataPoints: [
+                {
+                    [valueType]: metricValue,
+                    timeUnixNano: Date.now() * 1_000_000,
+                    attributes: Object.entries(attributes).map(([key, value]) => ({
+                        key,
+                        value: { stringValue: String(value) },
+                    })),
+                },
+            ],
         },
-      ],
-    },
-  };
+    };
 
-  if (metricType === 'sum') {
-    metric[metricType].aggregationTemporality = 'AGGREGATION_TEMPORALITY_CUMULATIVE';
-    metric[metricType].isMonotonic = true;
-  }
+    if (metricType === 'sum') {
+        metric[metricType].aggregationTemporality = 'AGGREGATION_TEMPORALITY_CUMULATIVE';
+        metric[metricType].isMonotonic = true;
+    }
 
-  return metric;
+    return metric;
 }
 
 function sendMetricToGrafana(metrics) {
-  const body = {
-    resourceMetrics: [
-      {
-        scopeMetrics: [{ metrics }],
-      },
-    ],
-  };
+    const body = {
+        resourceMetrics: [
+            {
+                scopeMetrics: [{ metrics }],
+            },
+        ],
+    };
 
-  fetch(`${config.url}`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: {
-      Authorization: `Bearer ${config.apiKey}`,
-      'Content-Type': 'application/json',
-    },
-  })
-    .then((response) => {
-      if (!response.ok) {
-        response.text().then((text) => {
-          console.error(`Failed to push metrics data to Grafana: ${text}`);
-        });
-      } else {
-        // console.log(`✅ Metrics pushed successfully`);
-      }
+    fetch(`${config.url}`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+            Authorization: `Bearer ${config.apiKey}`,
+            'Content-Type': 'application/json',
+        },
     })
-    .catch((error) => console.error('Error pushing metrics:', error));
+        .then((response) => {
+            if (!response.ok) {
+                response.text().then((text) => {
+                    console.error(`Failed to push metrics data to Grafana: ${text}`);
+                });
+            } else {
+                // console.log(`✅ Metrics pushed successfully`);
+            }
+        })
+        .catch((error) => console.error('Error pushing metrics:', error));
 }
 
 // =========================
 // Reset counters (per minute)
 // =========================
 function resetCounters() {
-  for (const key in requestsByEndpoint) delete requestsByEndpoint[key];
-  for (const key in requestsByMethod) delete requestsByMethod[key];
-  totalRequests = 0;
-  greetingChangedCount = 0;
+    for (const key in requestsByEndpoint) delete requestsByEndpoint[key];
+    for (const key in requestsByMethod) delete requestsByMethod[key];
+    totalRequests = 0;
+    greetingChangedCount = 0;
 
-  authAttemptsSuccess = 0;
-  authAttemptsFailed = 0;
+    authAttemptsSuccess = 0;
+    authAttemptsFailed = 0;
 
-  pizzasSold = 0;
-  pizzaCreationFailures = 0;
-  pizzaRevenue = 0;
+    pizzasSold = 0;
+    pizzaCreationFailures = 0;
+    pizzaRevenue = 0;
 
-  latencyService = 0;
-  latencyPizzaCreation = 0;
+    latencyService = 0;
+    latencyPizzaCreation = 0;
 }
 
 // =========================
 // Exports
 // =========================
 module.exports = {
-  requestTracker,
-  trackAuthAttempt,
-  trackPizzaSold,
-  trackPizzaFailure,
-  setActiveUsers,
-  recordAuthAttempt,
-  removeActiveUser,
-  trackServiceLatency,
-  trackPizzaLatency,
-  pizzaPurchase,
+    requestTracker,
+    trackAuthAttempt,
+    trackPizzaSold,
+    trackPizzaFailure,
+    setActiveUsers,
+    recordAuthAttempt,
+    removeActiveUser,
+    trackServiceLatency,
+    trackPizzaLatency,
+    pizzaPurchase,
 };
