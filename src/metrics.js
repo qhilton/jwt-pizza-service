@@ -231,7 +231,7 @@ setInterval(() => {
 // =========================
 
 function createMetric(metricName, metricValue, metricUnit, metricType, valueType, attributes) {
-    attributes = { ...attributes, source: config.source };
+    attributes = { ...attributes, source: config.metrics.source };
 
     const metric = {
         name: metricName,
@@ -267,11 +267,11 @@ function sendMetricToGrafana(metrics) {
         ],
     };
 
-    fetch(`${config.url}`, {
+    fetch(`${config.metrics.url}`, {
         method: 'POST',
         body: JSON.stringify(body),
         headers: {
-            Authorization: `Bearer ${config.apiKey}`,
+            Authorization: `Bearer ${config.metrics.apiKey}`,
             'Content-Type': 'application/json',
         },
     })
@@ -281,7 +281,7 @@ function sendMetricToGrafana(metrics) {
                     console.error(`Failed to push metrics data to Grafana: ${text}`);
                 });
             } else {
-                // console.log(`✅ Metrics pushed successfully`);
+                console.log(`✅ Metrics pushed successfully`);
             }
         })
         .catch((error) => console.error('Error pushing metrics:', error));
