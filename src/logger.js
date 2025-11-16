@@ -38,6 +38,7 @@ class Logger {
       params: params ? JSON.stringify(params) : null,
       executionTime: executionTime,
     };
+    
     this.log('info', 'database', logData);
   }
 
@@ -49,6 +50,7 @@ class Logger {
       executionTime: executionTime,
     };
     const level = success ? 'info' : 'error';
+
     this.log(level, 'factory', logData);
   }
 
@@ -58,12 +60,14 @@ class Logger {
       stack: error.stack,
       context: JSON.stringify(context),
     };
+
     this.log('error', 'unhandled-exception', logData);
   }
 
   statusToLogLevel(statusCode) {
     if (statusCode >= 500) return 'error';
     if (statusCode >= 400) return 'warn';
+
     return 'info';
   }
 
