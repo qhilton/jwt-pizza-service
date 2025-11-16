@@ -23,10 +23,6 @@ let pizzaRevenue = 0;
 let activeUsers = 0;
 const activeUsersMap = new Map();
 
-// Latency metrics (average or cumulative per interval)
-// let latencyService = 0;
-// let latencyPizzaCreation = 0;
-
 let serviceLatencies = [];
 let pizzaLatencies = [];
 
@@ -49,14 +45,6 @@ function requestTracker(req, res, next) {
 
     next();
 }
-
-// Example hook for latency tracking
-// function trackServiceLatency(ms) {
-//     latencyService += ms;
-// }
-// function trackPizzaLatency(ms) {
-//     latencyPizzaCreation += ms;
-// }
 
 function trackServiceLatency(ms) {
     serviceLatencies.push(ms);
@@ -126,13 +114,6 @@ function removeActiveUser(userId) {
 // =========================
 // System metrics helpers
 // =========================
-
-// function getCpuUsagePercentage() {
-//   const cpuUsage = os.loadavg()[0] / os.cpus().length;
-//   console.log("cpu usage ", cpuUsage);
-//   console.log("os.loadavg() ", os.loadavg());
-//   return cpuUsage.toFixed(2) * 100;
-// }
 
 function getCpuUsagePercentage() {
     const load = os.loadavg()[0];
@@ -207,15 +188,7 @@ setInterval(() => {
     metrics.push(createMetric('pizza_creation_failures', pizzaCreationFailures, '1', 'sum', 'asInt', {}));
     metrics.push(createMetric('pizza_revenue', pizzaRevenue, 'usd', 'sum', 'asDouble', {}));
 
-    // --- Latency Metrics ---
-    // metrics.push(createMetric('latency_service', latencyService, 'ms', 'sum', 'asInt', {}));
-    // metrics.push(createMetric('latency_pizza_creation', latencyPizzaCreation, 'ms', 'sum', 'asInt', {}));
-
     // --- Latency Metrics (averages over last minute) ---
-    // console.log("serviceLat", serviceLatencies);
-    // console.log("avg serviceLat", getAverageLatency(serviceLatencies));
-    // console.log("pizzaLatencies", pizzaLatencies);
-    // console.log("avg pizzaLatencies", getAverageLatency(pizzaLatencies));
     metrics.push(createMetric('latency_service', getAverageLatency(serviceLatencies), 'ms', 'gauge', 'asInt', {}));
     metrics.push(createMetric('latency_pizza_creation', getAverageLatency(pizzaLatencies), 'ms', 'gauge', 'asInt', {}));
 
