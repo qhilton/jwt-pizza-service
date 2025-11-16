@@ -7,7 +7,7 @@ const version = require('./version.json');
 const config = require('./config.js');
 const metrics = require('./metrics');
 const logger = require('./logger');
-console.log("🟦 PROD LOGGING CONFIG:", config.logging);
+
 const app = express();
 app.use(express.json());
 app.use(setAuthUser);
