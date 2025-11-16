@@ -65,7 +65,7 @@ jobs:
               url: '${{ secrets.LOGGING_URL }}',
               apiKey: '${{ secrets.LOGGING_API_KEY }}',
             },
-          };" > src/config.js
+          };" > config.js
 
       - name: Tests
         run: npm test
