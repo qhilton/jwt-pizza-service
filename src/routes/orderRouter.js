@@ -4,6 +4,7 @@ const { Role, DB } = require('../database/database.js');
 const { authRouter } = require('./authRouter.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 const metrics = require('../metrics');
+const logger = require('../logger.js');
 
 const orderRouter = express.Router();
 
@@ -107,6 +108,7 @@ orderRouter.post(
     try {
       // 1️⃣ Create the order in your local DB
       const order = await DB.addDinerOrder(req.user, orderReq);
+      const factoryRequest = { diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order };
 
       // Calculate total price for metrics
       if (order.items && Array.isArray(order.items)) {
@@ -120,20 +122,17 @@ orderRouter.post(
           'Content-Type': 'application/json',
           authorization: `Bearer ${config.factory.apiKey}`,
         },
-        body: JSON.stringify({
-          diner: {
-            id: req.user.id,
-            name: req.user.name,
-            email: req.user.email,
-          },
-          order,
-        }),
+        body: JSON.stringify(factoryRequest),
       });
 
       const result = await response.json();
 
       // 3️⃣ Track success/failure
       success = response.ok;
+
+      const latencyMs = Date.now() - startTime;
+
+      logger.logFactory(factoryRequest, result, success, latencyMs);
 
       if (success) {
         res.send({
@@ -151,13 +150,8 @@ orderRouter.post(
       console.error('Error processing pizza order:', error);
       res.status(500).json({ message: 'Order processing failed', error: error.message });
     } finally {
-      // 4️⃣ Calculate latency and record purchase metrics
       const latencyMs = Date.now() - startTime;
       metrics.pizzaPurchase(success, latencyMs, totalPrice);
-
-      // console.log(
-      //   `Pizza purchase metrics: success=${success}, latency=${latencyMs}ms, price=${totalPrice}`
-      // );
     }
   })
 );
